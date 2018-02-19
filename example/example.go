@@ -16,6 +16,14 @@ func main() {
 		pushnotifications.New(instanceId, secretKey)
 
 	publishRequest := map[string]interface{}{
+		"apns": map[string]interface{}{
+			"aps": map[string]interface{}{
+				"alert":  map[string]interface{}{
+					"title": "Hello",
+					"body": "Hello, world",
+				},
+			},
+		},
 		"fcm": map[string]interface{}{
 			"notification": map[string]interface{}{
 				"title": "Hello",
