@@ -112,7 +112,7 @@ func (pn *pushNotifications) Publish(interests []string, request map[string]inte
 
 	url := fmt.Sprintf(pn.baseEndpoint+"/publish_api/v1/instances/%s/publishes", pn.InstanceId)
 
-	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(bodyRequestBytes))
+	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyRequestBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to prepare the publish request")
 	}
