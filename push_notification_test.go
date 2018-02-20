@@ -28,25 +28,41 @@ var (
 
 func TestPushNotifications(t *testing.T) {
 	Convey("A Push Notifications Instance", t, func() {
-		pn := New(testInstanceId, testSecretKey)
+		Convey("should not be created if the Instance Id is an empty string", func() {
+			noPN, err := New("", testSecretKey)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "Instance Id can not be an empty string")
+			So(noPN, ShouldBeNil)
+		})
+
+		Convey("should not be created if the Secret Key is an empty string", func() {
+			noPN, err := New(testInstanceId, "")
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "Secret Key can not be an empty string")
+			So(noPN, ShouldBeNil)
+		})
+
+		pn, noErrors := New(testInstanceId, testSecretKey)
+		So(noErrors, ShouldBeNil)
+		So(pn, ShouldNotBeNil)
 
 		Convey("when publishing", func() {
 			Convey("should fail if no interests are given", func() {
 				pubId, err := pn.Publish([]string{}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
-				So(err, ShouldEqual, NoInterestsSuppliedErr)
+				So(err.Error(), ShouldContainSubstring, "No interests were supplied")
 			})
 
 			Convey("should fail if too many interests are given", func() {
 				pubId, err := pn.Publish(make([]string, 9001), testPublishRequest)
 				So(pubId, ShouldEqual, "")
-				So(err, ShouldEqual, TooManyInterestsSuppliedErr)
+				So(err.Error(), ShouldContainSubstring, "Too many interests supplied (9001): API only supports up to 10")
 			})
 
 			Convey("should fail if a zero-length interest is given", func() {
 				pubId, err := pn.Publish([]string{"ok", ""}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
-				So(err, ShouldEqual, InterestNameTooShortErr)
+				So(err.Error(), ShouldContainSubstring, "An empty interest name is not valid")
 			})
 
 			Convey("should fail if a interest with a very long name is given", func() {
@@ -57,13 +73,13 @@ func TestPushNotifications(t *testing.T) {
 
 				pubId, err := pn.Publish([]string{longInterestName}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
-				So(err, ShouldEqual, InterestNameTooLongErr)
+				So(err.Error(), ShouldContainSubstring, "Interest length is 9001 which is over 164 characters")
 			})
 
 			Convey("should fail if it contains invalid chars", func() {
 				pubId, err := pn.Publish([]string{`-#not<>ok`}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
-				So(err, ShouldEqual, InterestWithInvalidCharactersErr)
+				So(err.Error(), ShouldContainSubstring, "Interest `-#not<>ok` contains an forbidden character")
 			})
 
 			Convey("given a server it", func() {

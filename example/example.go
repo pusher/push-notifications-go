@@ -12,8 +12,7 @@ const (
 )
 
 func main() {
-	notifications :=
-		pushnotifications.New(instanceId, secretKey)
+	notifications, _ := pushnotifications.New(instanceId, secretKey)
 
 	publishRequest := map[string]interface{}{
 		"apns": map[string]interface{}{
@@ -31,10 +30,11 @@ func main() {
 			},
 		},
 	}
-	pubID, err := notifications.Publish([]string{"hello"}, publishRequest)
+
+	pubId, err := notifications.Publish([]string{"hello"}, publishRequest)
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println("Publish ID:", pubID)
+		fmt.Println("Publish Id:", pubId)
 	}
 }

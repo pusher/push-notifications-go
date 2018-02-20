@@ -23,14 +23,16 @@ const (
 	defaultBaseEndpointFormat = "https://%s.pushnotifications.pusher.com"
 )
 
-var (
-	NoInterestsSuppliedErr           = errors.New("No interests were supplied")
-	TooManyInterestsSuppliedErr      = errors.New("Too many interests supplied: API only supports up to 10.")
-	InterestNameTooShortErr          = errors.New("An empty interest name is not valid")
-	InterestNameTooLongErr           = errors.New("Interest length is over 164 characters")
-	InterestWithInvalidCharactersErr = errors.New(
-		"An interest name can be at most 164 characters long and contain: ASCII upper/lower-case letters, numbers and one of _=@,.:")
+type (
+	InvalidConfigurationErr error
+	NoInterestsSuppliedErr error
+	TooManyInterestsSuppliedErr error
+	InterestNameTooShortErr error
+	InterestNameTooLongErr error
+	InterestWithInvalidCharactersErr error
+)
 
+var (
 	interestValidationRegex = regexp.MustCompile("^[a-zA-Z0-9_=@,.;]+$")
 )
 
@@ -42,7 +44,14 @@ type pushNotifications struct {
 	httpClient   *http.Client
 }
 
-func New(instanceId string, secretKey string) PushNotifications {
+func New(instanceId string, secretKey string) (PushNotifications, error) {
+	if instanceId == "" {
+		return nil, InvalidConfigurationErr(errors.New("Instance Id can not be an empty string"))
+	}
+	if secretKey == "" {
+		return nil, InvalidConfigurationErr(errors.New("Secret Key can not be an empty string"))
+	}
+
 	return &pushNotifications{
 		InstanceId: instanceId,
 		SecretKey:  secretKey,
@@ -51,7 +60,7 @@ func New(instanceId string, secretKey string) PushNotifications {
 		httpClient: &http.Client{
 			Timeout: defaultRequestTimeout,
 		},
-	}
+	}, nil
 }
 
 type publishResponse struct {
@@ -66,24 +75,32 @@ type publishErrorResponse struct {
 func (pn *pushNotifications) Publish(interests []string, request map[string]interface{}) (string, error) {
 	if len(interests) == 0 {
 		// this request was not very interesting :/
-		return "", NoInterestsSuppliedErr
+		return "", NoInterestsSuppliedErr(errors.New("No interests were supplied"))
 	}
 
 	if len(interests) > 10 {
-		return "", TooManyInterestsSuppliedErr
+		return "", TooManyInterestsSuppliedErr(
+			errors.Errorf("Too many interests supplied (%d): API only supports up to 10", len(interests)))
 	}
 
 	for _, interest := range interests {
 		if len(interest) == 0 {
-			return "", InterestNameTooShortErr
+			return "", InterestNameTooShortErr(errors.New("An empty interest name is not valid"))
 		}
 
 		if len(interest) > 164 {
-			return "", InterestNameTooLongErr
+			return "", InterestNameTooLongErr(
+				errors.Errorf("Interest length is %d which is over 164 characters", len(interest)))
 		}
 
 		if !interestValidationRegex.MatchString(interest) {
-			return "", InterestWithInvalidCharactersErr
+			return "", InterestWithInvalidCharactersErr(
+				errors.Errorf(
+					"Interest `%s` contains an forbidden character: " +
+						"Allowed characters are: ASCII upper/lower-case letters, " +
+						"numbers or one of _=@,.:",
+						interest,
+				))
 		}
 	}
 	request["interests"] = interests
