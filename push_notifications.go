@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// The Pusher Push Notifications Server API client
 type PushNotifications interface {
 	// Publishes notifications to all devices subscribed to at least 1 of the interests given
 	// Returns a non-empty `publishId` string if successful; or a non-nil `error` otherwise.
@@ -21,15 +22,6 @@ type PushNotifications interface {
 const (
 	defaultRequestTimeout     = time.Minute
 	defaultBaseEndpointFormat = "https://%s.pushnotifications.pusher.com"
-)
-
-type (
-	InvalidConfigurationErr error
-	NoInterestsSuppliedErr error
-	TooManyInterestsSuppliedErr error
-	InterestNameTooShortErr error
-	InterestNameTooLongErr error
-	InterestWithInvalidCharactersErr error
 )
 
 var (
@@ -46,10 +38,10 @@ type pushNotifications struct {
 
 func New(instanceId string, secretKey string) (PushNotifications, error) {
 	if instanceId == "" {
-		return nil, InvalidConfigurationErr(errors.New("Instance Id can not be an empty string"))
+		return nil, errors.New("Instance Id can not be an empty string")
 	}
 	if secretKey == "" {
-		return nil, InvalidConfigurationErr(errors.New("Secret Key can not be an empty string"))
+		return nil, errors.New("Secret Key can not be an empty string")
 	}
 
 	return &pushNotifications{
@@ -75,36 +67,35 @@ type publishErrorResponse struct {
 func (pn *pushNotifications) Publish(interests []string, request map[string]interface{}) (string, error) {
 	if len(interests) == 0 {
 		// this request was not very interesting :/
-		return "", NoInterestsSuppliedErr(errors.New("No interests were supplied"))
+		return "", errors.New("No interests were supplied")
 	}
 
 	if len(interests) > 10 {
-		return "", TooManyInterestsSuppliedErr(
-			errors.Errorf("Too many interests supplied (%d): API only supports up to 10", len(interests)))
+		return "",
+			errors.Errorf("Too many interests supplied (%d): API only supports up to 10", len(interests))
 	}
 
 	for _, interest := range interests {
 		if len(interest) == 0 {
-			return "", InterestNameTooShortErr(errors.New("An empty interest name is not valid"))
+			return "", errors.New("An empty interest name is not valid")
 		}
 
 		if len(interest) > 164 {
-			return "", InterestNameTooLongErr(
-				errors.Errorf("Interest length is %d which is over 164 characters", len(interest)))
+			return "",
+				errors.Errorf("Interest length is %d which is over 164 characters", len(interest))
 		}
 
 		if !interestValidationRegex.MatchString(interest) {
-			return "", InterestWithInvalidCharactersErr(
+			return "",
 				errors.Errorf(
 					"Interest `%s` contains an forbidden character: " +
 						"Allowed characters are: ASCII upper/lower-case letters, " +
 						"numbers or one of _=@,.:",
-						interest,
-				))
+						interest)
 		}
 	}
-	request["interests"] = interests
 
+	request["interests"] = interests
 	bodyRequestBytes, err := json.Marshal(request)
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to marshal the publish request JSON body")
