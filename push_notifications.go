@@ -36,6 +36,8 @@ type pushNotifications struct {
 	httpClient   *http.Client
 }
 
+// Creates a New `PushNotifications` instance.
+// Returns an non-nil error if `instanceId` or `secretKey` are empty
 func New(instanceId string, secretKey string) (PushNotifications, error) {
 	if instanceId == "" {
 		return nil, errors.New("Instance Id can not be an empty string")
