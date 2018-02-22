@@ -1,5 +1,15 @@
 # Pusher Push Notifications Go Server SDK
 
+## Getting Started
+
+```
+$ go get github.com/pusher/push-notifications-go
+```
+
+## Examples
+
+Refer to the `example` directory.
+
 ## Communication
 
 - Found a bug? Please open an [issue](https://github.com/pusher/push-notifications-go/issues).
