@@ -88,10 +88,10 @@ func (pn *pushNotifications) Publish(interests []string, request map[string]inte
 		if !interestValidationRegex.MatchString(interest) {
 			return "",
 				errors.Errorf(
-					"Interest `%s` contains an forbidden character: " +
-						"Allowed characters are: ASCII upper/lower-case letters, " +
+					"Interest `%s` contains an forbidden character: "+
+						"Allowed characters are: ASCII upper/lower-case letters, "+
 						"numbers or one of _=@,.:",
-						interest)
+					interest)
 		}
 	}
 

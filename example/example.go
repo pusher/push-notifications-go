@@ -17,9 +17,9 @@ func main() {
 	publishRequest := map[string]interface{}{
 		"apns": map[string]interface{}{
 			"aps": map[string]interface{}{
-				"alert":  map[string]interface{}{
+				"alert": map[string]interface{}{
 					"title": "Hello",
-					"body": "Hello, world",
+					"body":  "Hello, world",
 				},
 			},
 		},
