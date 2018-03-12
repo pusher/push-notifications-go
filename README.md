@@ -1,4 +1,4 @@
-# Pusher Push Notifications Go Server SDK
+# Pusher Push Notifications Go Server SDK [![Build Status](https://travis-ci.org/pusher/push-notifications-go.svg?branch=master)](https://travis-ci.org/pusher/push-notifications-go)
 
 ## Getting Started
 
