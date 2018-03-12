@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	interestValidationRegex = regexp.MustCompile("^[a-zA-Z0-9_=@,.;]+$")
+	interestValidationRegex = regexp.MustCompile(`^[a-zA-Z0-9_\-=@,.;]+$`)
 )
 
 type pushNotifications struct {
@@ -92,7 +92,7 @@ func (pn *pushNotifications) Publish(interests []string, request map[string]inte
 				errors.Errorf(
 					"Interest `%s` contains an forbidden character: "+
 						"Allowed characters are: ASCII upper/lower-case letters, "+
-						"numbers or one of _=@,.:",
+						"numbers or one of _-=@,.:",
 					interest)
 		}
 	}
