@@ -77,9 +77,9 @@ func TestPushNotifications(t *testing.T) {
 			})
 
 			Convey("should fail if it contains invalid chars", func() {
-				pubId, err := pn.Publish([]string{`-#not<>ok`}, testPublishRequest)
+				pubId, err := pn.Publish([]string{`#not<>|ok`}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
-				So(err.Error(), ShouldContainSubstring, "Interest `-#not<>ok` contains an forbidden character")
+				So(err.Error(), ShouldContainSubstring, "Interest `#not<>|ok` contains an forbidden character")
 			})
 
 			Convey("given a server it", func() {
@@ -144,11 +144,11 @@ func TestPushNotifications(t *testing.T) {
 						w.Write([]byte(`{"publishId":"pub-123"}`))
 					}
 
-					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
+					pubId, err := pn.Publish([]string{"hell-o"}, testPublishRequest)
 					So(pubId, ShouldEqual, "pub-123")
 					So(err, ShouldBeNil)
 
-					expected := `{"fcm":{"notification":{"body":"Hello, world","title":"Hello"}},"interests":["hello"]}`
+					expected := `{"fcm":{"notification":{"body":"Hello, world","title":"Hello"}},"interests":["hell-o"]}`
 					So(string(lastHttpPayload), ShouldResemble, expected)
 				})
 			})
