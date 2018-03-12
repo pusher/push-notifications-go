@@ -123,8 +123,7 @@ func TestPushNotifications(t *testing.T) {
 					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
 					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
-					So(err.Error(), ShouldContainSubstring, "Failed to publish notification")
-					So(err.Error(), ShouldContainSubstring, "network error")
+					So(err.Error(), ShouldContainSubstring, "Failed")
 				})
 
 				Convey("should return an error if the server 200 OK response is invalid JSON", func() {
