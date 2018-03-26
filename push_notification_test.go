@@ -1,9 +1,11 @@
 package pushnotifications
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -86,11 +88,10 @@ func TestPushNotifications(t *testing.T) {
 				var lastHttpPayload []byte
 				var serverRequestHandler http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {} // no-op
 
-				successHttpHandler := func(w http.ResponseWriter, r *http.Request) {
+				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					lastHttpPayload, _ = ioutil.ReadAll(r.Body)
 					serverRequestHandler(w, r)
-				}
-				testServer := httptest.NewServer(http.HandlerFunc(successHttpHandler))
+				}))
 				defer testServer.Close()
 
 				pn.(*pushNotifications).baseEndpoint = testServer.URL
@@ -149,6 +150,23 @@ func TestPushNotifications(t *testing.T) {
 
 					expected := `{"fcm":{"notification":{"body":"Hello, world","title":"Hello"}},"interests":["hell-o"]}`
 					So(string(lastHttpPayload), ShouldResemble, expected)
+				})
+
+				Convey("should succeed if 100 interests are given", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte(`{"publishId":"pub-123"}`))
+					}
+
+					interests := make([]string, 100)
+
+					for i := range interests {
+						interests[i] = fmt.Sprintf("%s", strconv.Itoa(i))
+					}
+					pubId, err := pn.Publish(interests, testPublishRequest)
+
+					So(pubId, ShouldNotBeNil)
+					So(err, ShouldBeNil)
 				})
 			})
 		})
