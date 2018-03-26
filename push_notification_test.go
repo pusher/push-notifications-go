@@ -168,6 +168,23 @@ func TestPushNotifications(t *testing.T) {
 					So(pubId, ShouldNotBeNil)
 					So(err, ShouldBeNil)
 				})
+
+				Convey("should fail if 101 interests are given", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{"error":"123","description":"why"}`))
+					}
+
+					interests := make([]string, 101)
+
+					for i := range interests {
+						interests[i] = fmt.Sprintf("%s", strconv.Itoa(i))
+					}
+					pubId, err := pn.Publish(interests, testPublishRequest)
+
+					So(pubId, ShouldEqual, "")
+					So(err.Error(), ShouldContainSubstring, "Too many interests")
+				})
 			})
 		})
 	})
