@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -150,6 +151,48 @@ func TestPushNotifications(t *testing.T) {
 					expected := `{"fcm":{"notification":{"body":"Hello, world","title":"Hello"}},"interests":["hell-o"]}`
 					So(string(lastHttpPayload), ShouldResemble, expected)
 				})
+			})
+		})
+
+		Convey("when authenticating a User", func() {
+			Convey("should return an error if the User Id is empty", func() {
+				token, err := pn.AuthenticateUser("")
+
+				So(err, ShouldNotBeNil)
+				So(token, ShouldEqual, "")
+			})
+
+			Convey("should return an error if the User Id is too long", func() {
+				s := ""
+				for i := 0; i < maxUserIdLength; i++ {
+					s += "a"
+				}
+
+				token, err := pn.AuthenticateUser(s)
+
+				So(err, ShouldBeNil)
+				So(token, ShouldNotEqual, "")
+
+				token, err = pn.AuthenticateUser(s + "a")
+
+				So(err, ShouldNotBeNil)
+				So(token, ShouldEqual, "")
+			})
+
+			Convey("should return a valid JWT token if everything is correct", func() {
+				token, err := pn.AuthenticateUser("u-123")
+
+				So(err, ShouldBeNil)
+				So(token, ShouldNotEqual, "")
+
+				parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+					return []byte(testSecretKey), nil
+				})
+
+				So(err, ShouldBeNil)
+				So(parsedToken, ShouldNotBeNil)
+				So(parsedToken.Valid, ShouldBeTrue)
+				So(parsedToken.Claims.(jwt.MapClaims)["sub"], ShouldEqual, "u-123")
 			})
 		})
 	})

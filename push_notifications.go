@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 )
 
@@ -17,11 +18,13 @@ type PushNotifications interface {
 	// Publishes notifications to all devices subscribed to at least 1 of the interests given
 	// Returns a non-empty `publishId` string if successful; or a non-nil `error` otherwise.
 	Publish(interests []string, request map[string]interface{}) (publishId string, err error)
+	AuthenticateUser(userId string) (string, error)
 }
 
 const (
 	defaultRequestTimeout     = time.Minute
 	defaultBaseEndpointFormat = "https://%s.pushnotifications.pusher.com"
+	maxUserIdLength           = 255
 )
 
 var (
@@ -64,6 +67,31 @@ type publishResponse struct {
 type publishErrorResponse struct {
 	Error       string `json:"error"`
 	Description string `json:"description"`
+}
+
+func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
+	if len(userId) == 0 {
+		return "", errors.New("User Id can not be empty")
+	}
+
+	if len(userId) > maxUserIdLength {
+		return "", errors.Errorf(
+			"User Id ('%s') length too long (expected less than %d, got %d)",
+			userId, maxUserIdLength + 1, len(userId))
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": userId,
+		"exp": time.Now().Add(24 * time.Hour),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, signingErrorErr := token.SignedString([]byte(pn.SecretKey))
+	if signingErrorErr != nil {
+		return "", errors.Wrap(signingErrorErr, "Failed to sign the JWT token used for User Authentication")
+	}
+
+	return tokenString, nil
 }
 
 func (pn *pushNotifications) Publish(interests []string, request map[string]interface{}) (string, error) {
