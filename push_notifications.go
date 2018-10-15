@@ -24,7 +24,7 @@ type PushNotifications interface {
 const (
 	defaultRequestTimeout     = time.Minute
 	defaultBaseEndpointFormat = "https://%s.pushnotifications.pusher.com"
-	maxUserIdLength           = 255
+	maxUserIdLength           = 164
 )
 
 var (
@@ -71,12 +71,12 @@ type publishErrorResponse struct {
 
 func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
 	if len(userId) == 0 {
-		return "", errors.New("User Id can not be empty")
+		return "", errors.New("User Id cannot be empty")
 	}
 
 	if len(userId) > maxUserIdLength {
 		return "", errors.Errorf(
-			"User Id ('%s') length too long (expected less than %d, got %d)",
+			"User Id ('%s') length too long (expected fewer than %d characters, got %d)",
 			userId, maxUserIdLength+1, len(userId))
 	}
 

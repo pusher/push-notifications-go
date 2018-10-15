@@ -1,6 +1,7 @@
 package pushnotifications
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -160,6 +161,7 @@ func TestPushNotifications(t *testing.T) {
 
 				So(err, ShouldNotBeNil)
 				So(token, ShouldEqual, "")
+				So(err.Error(), ShouldContainSubstring, "User Id cannot be empty")
 			})
 
 			Convey("should return an error if the User Id is too long", func() {
@@ -173,10 +175,16 @@ func TestPushNotifications(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(token, ShouldNotEqual, "")
 
+				longerUserId := s + "a"
 				token, err = pn.AuthenticateUser(s + "a")
 
 				So(err, ShouldNotBeNil)
 				So(token, ShouldEqual, "")
+				So(
+					err.Error(),
+					ShouldContainSubstring,
+					fmt.Sprintf("User Id ('%s') length too long (expected fewer than %d characters, got %d)", longerUserId, maxUserIdLength+1, len(longerUserId)),
+				)
 			})
 
 			Convey("should return a valid JWT token if everything is correct", func() {
