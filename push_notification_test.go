@@ -181,6 +181,8 @@ func TestPushNotifications(t *testing.T) {
 
 			Convey("should return a valid JWT token if everything is correct", func() {
 				token, err := pn.AuthenticateUser("u-123")
+				expectedIssuer := "https://" + testInstanceId + ".pushnotifications.pusher.com"
+				expectedSubject := "u-123"
 
 				So(err, ShouldBeNil)
 				So(token, ShouldNotEqual, "")
@@ -190,9 +192,15 @@ func TestPushNotifications(t *testing.T) {
 				})
 
 				So(err, ShouldBeNil)
-				So(parsedToken, ShouldNotBeNil)
+
+				So(parsedToken, ShouldNotEqual, jwt.Token{})
 				So(parsedToken.Valid, ShouldBeTrue)
-				So(parsedToken.Claims.(jwt.MapClaims)["sub"], ShouldEqual, "u-123")
+
+				So(parsedToken.Claims.(jwt.MapClaims)["iss"], ShouldEqual, expectedIssuer)
+				So(parsedToken.Claims.(jwt.MapClaims)["sub"], ShouldEqual, expectedSubject)
+				expirySeconds := parsedToken.Claims.(jwt.MapClaims)["exp"]
+				expiry := expirySeconds.(float64)
+				So(time.Unix(int64(expiry), 0), ShouldHappenAfter, time.Now())
 			})
 		})
 	})

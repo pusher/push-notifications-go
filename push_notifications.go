@@ -77,12 +77,13 @@ func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
 	if len(userId) > maxUserIdLength {
 		return "", errors.Errorf(
 			"User Id ('%s') length too long (expected less than %d, got %d)",
-			userId, maxUserIdLength + 1, len(userId))
+			userId, maxUserIdLength+1, len(userId))
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userId,
-		"exp": time.Now().Add(24 * time.Hour),
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"iss": "https://" + pn.InstanceId + ".pushnotifications.pusher.com",
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
