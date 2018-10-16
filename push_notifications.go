@@ -43,10 +43,10 @@ type pushNotifications struct {
 // Returns an non-nil error if `instanceId` or `secretKey` are empty
 func New(instanceId string, secretKey string) (PushNotifications, error) {
 	if instanceId == "" {
-		return nil, errors.New("Instance Id can not be an empty string")
+		return nil, errors.New("Instance Id cannot be an empty string")
 	}
 	if secretKey == "" {
-		return nil, errors.New("Secret Key can not be an empty string")
+		return nil, errors.New("Secret Key cannot be an empty string")
 	}
 
 	return &pushNotifications{

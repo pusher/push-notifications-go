@@ -33,14 +33,14 @@ func TestPushNotifications(t *testing.T) {
 		Convey("should not be created if the Instance Id is an empty string", func() {
 			noPN, err := New("", testSecretKey)
 			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "Instance Id can not be an empty string")
+			So(err.Error(), ShouldContainSubstring, "Instance Id cannot be an empty string")
 			So(noPN, ShouldBeNil)
 		})
 
 		Convey("should not be created if the Secret Key is an empty string", func() {
 			noPN, err := New(testInstanceId, "")
 			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "Secret Key can not be an empty string")
+			So(err.Error(), ShouldContainSubstring, "Secret Key cannot be an empty string")
 			So(noPN, ShouldBeNil)
 		})
 
