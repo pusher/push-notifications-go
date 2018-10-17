@@ -17,9 +17,15 @@ import (
 // The Pusher Push Notifications Server API client
 type PushNotifications interface {
 	// Publishes notifications to all devices subscribed to at least 1 of the interests given
-	// Returns a non-empty `publishId` string if successful; or a non-nil `error` otherwise.
+	// Returns a non-empty `publishId` JSON string if successful; or a non-nil `error` otherwise.
+	PublishToInterests(interests []string, request map[string]interface{}) (publishId string, err error)
+	// An alias for `PublishToInterests`
 	Publish(interests []string, request map[string]interface{}) (publishId string, err error)
+	// Publishes notifications to all devices subscribed to at least 1 of the user ids given
+	// Returns a non-empty `publishId` JSON string successful, or a non-nil `error` otherwise.
 	PublishToUsers(users []string, request map[string]interface{}) (publishId string, err error)
+	// Creates a signed JWT for a user id.
+	// Returns a signed JWT if successful, or a non-nil `error` otherwise.
 	AuthenticateUser(userId string) (string, error)
 }
 
@@ -89,7 +95,6 @@ func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
 		"iss": "https://" + pn.InstanceId + ".pushnotifications.pusher.com",
 	})
 
-	// Sign and get the complete encoded token as a string using the secret
 	tokenString, signingErrorErr := token.SignedString([]byte(pn.SecretKey))
 	if signingErrorErr != nil {
 		return "", errors.Wrap(signingErrorErr, "Failed to sign the JWT token used for User Authentication")
@@ -99,6 +104,10 @@ func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
 }
 
 func (pn *pushNotifications) Publish(interests []string, request map[string]interface{}) (string, error) {
+	return pn.PublishToInterests(interests, request)
+}
+
+func (pn *pushNotifications) PublishToInterests(interests []string, request map[string]interface{}) (string, error) {
 	if len(interests) == 0 {
 		// this request was not very interesting :/
 		return "", errors.New("No interests were supplied")
@@ -204,7 +213,6 @@ func (pn *pushNotifications) publishToAPI(url string, bodyRequestBytes []byte) (
 
 		return pubResponse.PublishId, nil
 	default:
-		fmt.Println("DEFAULT")
 		pubErrorResponse := &publishErrorResponse{}
 		err = json.Unmarshal(responseBytes, pubErrorResponse)
 		if err != nil {

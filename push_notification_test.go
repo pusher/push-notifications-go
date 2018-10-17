@@ -50,19 +50,19 @@ func TestPushNotifications(t *testing.T) {
 
 		Convey("when publishing interests", func() {
 			Convey("should fail if no interests are given", func() {
-				pubId, err := pn.Publish([]string{}, testPublishRequest)
+				pubId, err := pn.PublishToInterests([]string{}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err.Error(), ShouldContainSubstring, "No interests were supplied")
 			})
 
 			Convey("should fail if too many interests are given", func() {
-				pubId, err := pn.Publish(make([]string, 9001), testPublishRequest)
+				pubId, err := pn.PublishToInterests(make([]string, 9001), testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err.Error(), ShouldContainSubstring, "Too many interests supplied (9001): API only supports up to 10")
 			})
 
 			Convey("should fail if a zero-length interest is given", func() {
-				pubId, err := pn.Publish([]string{"ok", ""}, testPublishRequest)
+				pubId, err := pn.PublishToInterests([]string{"ok", ""}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err.Error(), ShouldContainSubstring, "An empty interest name is not valid")
 			})
@@ -73,13 +73,13 @@ func TestPushNotifications(t *testing.T) {
 					longInterestName += "a"
 				}
 
-				pubId, err := pn.Publish([]string{longInterestName}, testPublishRequest)
+				pubId, err := pn.PublishToInterests([]string{longInterestName}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err.Error(), ShouldContainSubstring, "Interest length is 9001 which is over 164 characters")
 			})
 
 			Convey("should fail if it contains invalid chars", func() {
-				pubId, err := pn.Publish([]string{`#not<>|ok`}, testPublishRequest)
+				pubId, err := pn.PublishToInterests([]string{`#not<>|ok`}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err.Error(), ShouldContainSubstring, "Interest `#not<>|ok` contains an forbidden character")
 			})
@@ -103,7 +103,7 @@ func TestPushNotifications(t *testing.T) {
 						w.Write([]byte(`{bad-json"}`))
 					}
 
-					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
+					pubId, err := pn.PublishToInterests([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
 					So(err.Error(), ShouldContainSubstring, "invalid JSON")
 				})
@@ -114,7 +114,7 @@ func TestPushNotifications(t *testing.T) {
 						w.Write([]byte(`{"error":"123","description":"why"}`))
 					}
 
-					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
+					pubId, err := pn.PublishToInterests([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
 					So(err, ShouldNotBeNil)
 					So(err.Error(), ShouldContainSubstring, "Failed to publish notification")
@@ -124,7 +124,7 @@ func TestPushNotifications(t *testing.T) {
 
 				Convey("should return a network error if the request times out", func() {
 					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
-					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
+					pubId, err := pn.PublishToInterests([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
 					So(err, ShouldNotBeNil)
 					So(err.Error(), ShouldContainSubstring, "Failed")
@@ -136,12 +136,26 @@ func TestPushNotifications(t *testing.T) {
 						w.Write([]byte(`{bad-json"}`))
 					}
 
-					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
+					pubId, err := pn.PublishToInterests([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
 					So(err.Error(), ShouldContainSubstring, "invalid JSON")
 				})
 
 				Convey("should return the publish id if the request is valid", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte(`{"publishId":"pub-123"}`))
+					}
+
+					pubId, err := pn.PublishToInterests([]string{"hell-o"}, testPublishRequest)
+					So(pubId, ShouldEqual, "pub-123")
+					So(err, ShouldBeNil)
+
+					expected := `{"fcm":{"notification":{"body":"Hello, world","title":"Hello"}},"interests":["hell-o"]}`
+					So(string(lastHttpPayload), ShouldResemble, expected)
+				})
+
+				Convey("should still return the publish id if the `Publish` alias method is used and the request is valid", func() {
 					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusOK)
 						w.Write([]byte(`{"publishId":"pub-123"}`))
