@@ -48,7 +48,7 @@ func TestPushNotifications(t *testing.T) {
 		So(noErrors, ShouldBeNil)
 		So(pn, ShouldNotBeNil)
 
-		Convey("when publishing", func() {
+		Convey("when publishing interests", func() {
 			Convey("should fail if no interests are given", func() {
 				pubId, err := pn.Publish([]string{}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
@@ -108,7 +108,7 @@ func TestPushNotifications(t *testing.T) {
 					So(err.Error(), ShouldContainSubstring, "invalid JSON")
 				})
 
-				Convey("should return an error if the server 400 Bad Request response", func() {
+				Convey("should return an error if the server responds with 400 Bad Request", func() {
 					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusBadRequest)
 						w.Write([]byte(`{"error":"123","description":"why"}`))
@@ -116,15 +116,17 @@ func TestPushNotifications(t *testing.T) {
 
 					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
 					So(err.Error(), ShouldContainSubstring, "Failed to publish notification")
 					So(err.Error(), ShouldContainSubstring, "123")
 					So(err.Error(), ShouldContainSubstring, "why")
 				})
 
-				Convey("should return an network error if the request times-out", func() {
+				Convey("should return a network error if the request times out", func() {
 					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
 					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
 					So(err.Error(), ShouldContainSubstring, "Failed")
 				})
 
@@ -209,6 +211,141 @@ func TestPushNotifications(t *testing.T) {
 				expirySeconds := parsedToken.Claims.(jwt.MapClaims)["exp"]
 				expiry := expirySeconds.(float64)
 				So(time.Unix(int64(expiry), 0), ShouldHappenAfter, time.Now())
+			})
+		})
+
+		Convey("when publishing to Users", func() {
+			Convey("should fail if no Users are given", func() {
+
+				pubId, err := pn.PublishToUsers([]string{}, testPublishRequest)
+				So(pubId, ShouldEqual, "")
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "Must supply at least one user id")
+			})
+
+			Convey("should fail if too many Users are given", func() {
+				pubId, err := pn.PublishToUsers(make([]string, 1001), testPublishRequest)
+				So(pubId, ShouldEqual, "")
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("Too many user ids supplied. API supports up to %d, got %d", maxNumUserIds, 1001))
+			})
+
+			Convey("should fail if a zero-length User id is given", func() {
+				pubId, err := pn.PublishToUsers(make([]string, 5), testPublishRequest)
+				So(pubId, ShouldEqual, "")
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "Empty user ids are not valid")
+			})
+
+			Convey("should fail if a User id is too long", func() {
+				var tooLong string
+				for i := 0; i < maxUserIdLength+1; i++ {
+					tooLong += "h"
+				}
+				pubId, err := pn.PublishToUsers([]string{"a", "b", tooLong, "d"}, testPublishRequest)
+				So(pubId, ShouldEqual, "")
+				So(err, ShouldNotBeNil)
+				So(
+					err.Error(),
+					ShouldContainSubstring,
+					fmt.Sprintf("User Id ('%s') length too long (expected fewer than %d characters, got %d)", tooLong, maxUserIdLength, len(tooLong)),
+				)
+			})
+
+			Convey("should fail if a User id contains invalid chars", func() {
+				invalid := []byte{192}
+				pubId, err := pn.PublishToUsers([]string{"a", "b", string(invalid), "d"}, testPublishRequest)
+				So(pubId, ShouldEqual, "")
+				So(err, ShouldNotBeNil)
+				So(
+					err.Error(),
+					ShouldContainSubstring,
+					fmt.Sprintf("User Id at index %d is not valid utf8", 2),
+				)
+			})
+
+			Convey("given a server, it", func() {
+				var lastHttpPayload []byte
+				var serverRequestHandler http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {} // no-op
+
+				successHttpHandler := func(w http.ResponseWriter, r *http.Request) {
+					lastHttpPayload, _ = ioutil.ReadAll(r.Body)
+					serverRequestHandler(w, r)
+				}
+				testServer := httptest.NewServer(http.HandlerFunc(successHttpHandler))
+				defer testServer.Close()
+
+				pn.(*pushNotifications).baseEndpoint = testServer.URL
+
+				Convey("should return an error if the server returns a 400 Bad Request response and contains invalid JSON", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{bad-json"}`))
+					}
+
+					pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
+					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "invalid JSON")
+				})
+
+				Convey("should return an error if the server responds with 400 Bad Request", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{"error": "123", "description": "a lovely description"}`))
+					}
+
+					pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
+					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "Failed to publish notification")
+					So(err.Error(), ShouldContainSubstring, "123")
+					So(err.Error(), ShouldContainSubstring, "a lovely description")
+				})
+
+				Convey("should return a network error if the request times out", func() {
+					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
+					pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
+					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "Failed to publish notifications due to a network error")
+				})
+
+				Convey("should return an error if the server responds 200 OK but returns invalid JSON", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte(`{bad-json"}`))
+					}
+
+					pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
+					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "invalid JSON")
+				})
+
+				Convey("should return the publish id if the request is valid", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte(`{"publishId": "pub-123"}`))
+
+						expectedHttpPayload := `
+						{
+							"fcm": {
+								"notification": {
+									"body": "Hello, world",
+									"title": "Hello",
+									"users":["user-1"]
+								}
+							}
+						}
+						`
+
+						pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
+						So(pubId, ShouldEqual, "pub-123")
+						So(err, ShouldBeNil)
+						So(string(lastHttpPayload), ShouldResemble, expectedHttpPayload)
+					}
+				})
 			})
 		})
 	})

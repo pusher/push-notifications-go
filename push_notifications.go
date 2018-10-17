@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ type PushNotifications interface {
 	// Publishes notifications to all devices subscribed to at least 1 of the interests given
 	// Returns a non-empty `publishId` string if successful; or a non-nil `error` otherwise.
 	Publish(interests []string, request map[string]interface{}) (publishId string, err error)
+	PublishToUsers(users []string, request map[string]interface{}) (publishId string, err error)
 	AuthenticateUser(userId string) (string, error)
 }
 
@@ -25,6 +27,7 @@ const (
 	defaultRequestTimeout     = time.Minute
 	defaultBaseEndpointFormat = "https://%s.pushnotifications.pusher.com"
 	maxUserIdLength           = 164
+	maxNumUserIds             = 1000
 )
 
 var (
@@ -133,7 +136,44 @@ func (pn *pushNotifications) Publish(interests []string, request map[string]inte
 	}
 
 	url := fmt.Sprintf(pn.baseEndpoint+"/publish_api/v1/instances/%s/publishes", pn.InstanceId)
+	return pn.publishToAPI(url, bodyRequestBytes)
+}
 
+func (pn *pushNotifications) PublishToUsers(users []string, request map[string]interface{}) (string, error) {
+	if len(users) == 0 {
+		return "", errors.New("Must supply at least one user id")
+	}
+	if len(users) > maxNumUserIds {
+		return "", errors.New(
+			fmt.Sprintf("Too many user ids supplied. API supports up to %d, got %d", maxNumUserIds, len(users)),
+		)
+	}
+	for i, userId := range users {
+		if userId == "" {
+			return "", errors.New("Empty user ids are not valid")
+		}
+		if len(userId) > maxUserIdLength {
+			return "", errors.New(
+				fmt.Sprintf("User Id ('%s') length too long (expected fewer than %d characters, got %d)", userId, maxUserIdLength, len(userId)),
+			)
+		}
+		// test for invalid characters
+		if !utf8.ValidString(userId) {
+			return "", errors.New(fmt.Sprintf("User Id at index %d is not valid utf8", i))
+		}
+	}
+
+	request["users"] = users
+	bodyRequestBytes, err := json.Marshal(request)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to marshal the publish request JSON body")
+	}
+
+	url := fmt.Sprintf("%s/publish_api/v1/instances/%s/publishes/users", pn.baseEndpoint, pn.InstanceId)
+	return pn.publishToAPI(url, bodyRequestBytes)
+}
+
+func (pn *pushNotifications) publishToAPI(url string, bodyRequestBytes []byte) (string, error) {
 	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyRequestBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to prepare the publish request")
@@ -164,6 +204,7 @@ func (pn *pushNotifications) Publish(interests []string, request map[string]inte
 
 		return pubResponse.PublishId, nil
 	default:
+		fmt.Println("DEFAULT")
 		pubErrorResponse := &publishErrorResponse{}
 		err = json.Unmarshal(responseBytes, pubErrorResponse)
 		if err != nil {
