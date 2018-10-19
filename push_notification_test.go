@@ -247,7 +247,7 @@ func TestPushNotifications(t *testing.T) {
 				pubId, err := pn.PublishToUsers(make([]string, 1001), testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("Too many user ids supplied. API supports up to %d, got %d", maxNumUserIds, 1001))
+				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("Too many user ids supplied. API supports up to %d, got %d", maxNumUserIdsWhenPublishing, 1001))
 			})
 
 			Convey("should fail if a zero-length User id is given", func() {
