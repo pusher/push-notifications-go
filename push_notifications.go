@@ -30,10 +30,10 @@ type PushNotifications interface {
 }
 
 const (
-	defaultRequestTimeout     = time.Minute
-	defaultBaseEndpointFormat = "https://%s.pushnotifications.pusher.com"
-	maxUserIdLength           = 164
-	maxNumUserIds             = 1000
+	defaultRequestTimeout       = time.Minute
+	defaultBaseEndpointFormat   = "https://%s.pushnotifications.pusher.com"
+	maxUserIdLength             = 164
+	maxNumUserIdsWhenPublishing = 1000
 )
 
 var (
@@ -152,9 +152,9 @@ func (pn *pushNotifications) PublishToUsers(users []string, request map[string]i
 	if len(users) == 0 {
 		return "", errors.New("Must supply at least one user id")
 	}
-	if len(users) > maxNumUserIds {
+	if len(users) > maxNumUserIdsWhenPublishing {
 		return "", errors.New(
-			fmt.Sprintf("Too many user ids supplied. API supports up to %d, got %d", maxNumUserIds, len(users)),
+			fmt.Sprintf("Too many user ids supplied. API supports up to %d, got %d", maxNumUserIdsWhenPublishing, len(users)),
 		)
 	}
 	for i, userId := range users {

@@ -213,16 +213,15 @@ func TestPushNotifications(t *testing.T) {
 
 			Convey("should return a valid JWT token if everything is correct", func() {
 				token, err := pn.AuthenticateUser("u-123")
-				expectedIssuer := "https://" + testInstanceId + ".pushnotifications.pusher.com"
-				expectedSubject := "u-123"
-
 				So(err, ShouldBeNil)
 				So(token, ShouldNotEqual, "")
+
+				expectedIssuer := "https://" + testInstanceId + ".pushnotifications.pusher.com"
+				expectedSubject := "u-123"
 
 				parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 					return []byte(testSecretKey), nil
 				})
-
 				So(err, ShouldBeNil)
 
 				So(parsedToken, ShouldNotEqual, jwt.Token{})
@@ -238,7 +237,6 @@ func TestPushNotifications(t *testing.T) {
 
 		Convey("when publishing to Users", func() {
 			Convey("should fail if no Users are given", func() {
-
 				pubId, err := pn.PublishToUsers([]string{}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
 				So(err, ShouldNotBeNil)
