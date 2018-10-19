@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -89,6 +90,18 @@ func TestPushNotifications(t *testing.T) {
 						pubId, err := publishToInterests([]string{`#not<>|ok`}, testPublishRequest)
 						So(pubId, ShouldEqual, "")
 						So(err.Error(), ShouldContainSubstring, "Interest `#not<>|ok` contains an forbidden character")
+					})
+
+					Convey("should fail if 101 interests are given", func() {
+						interests := make([]string, 101)
+
+						for i := range interests {
+							interests[i] = fmt.Sprintf("%s", strconv.Itoa(i))
+						}
+						pubId, err := pn.Publish(interests, testPublishRequest)
+
+						So(pubId, ShouldEqual, "")
+						So(err.Error(), ShouldContainSubstring, "Too many interests")
 					})
 
 					Convey("given a server it", func() {
@@ -354,6 +367,23 @@ func TestPushNotifications(t *testing.T) {
 						So(err, ShouldBeNil)
 						So(string(lastHttpPayload), ShouldResemble, expectedHttpPayload)
 					}
+				})
+
+				Convey("should succeed if 100 interests are given", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte(`{"publishId":"pub-123"}`))
+					}
+
+					interests := make([]string, 100)
+
+					for i := range interests {
+						interests[i] = fmt.Sprintf("%s", strconv.Itoa(i))
+					}
+					pubId, err := pn.Publish(interests, testPublishRequest)
+
+					So(pubId, ShouldNotBeNil)
+					So(err, ShouldBeNil)
 				})
 			})
 		})

@@ -113,9 +113,9 @@ func (pn *pushNotifications) PublishToInterests(interests []string, request map[
 		return "", errors.New("No interests were supplied")
 	}
 
-	if len(interests) > 10 {
+	if len(interests) > 100 {
 		return "",
-			errors.Errorf("Too many interests supplied (%d): API only supports up to 10", len(interests))
+			errors.Errorf("Too many interests supplied (%d): API only supports up to 100", len(interests))
 	}
 
 	for _, interest := range interests {

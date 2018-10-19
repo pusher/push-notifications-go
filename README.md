@@ -1,4 +1,4 @@
-# Pusher Push Notifications Go Server SDK [![Build Status](https://travis-ci.org/pusher/push-notifications-go.svg?branch=master)](https://travis-ci.org/pusher/push-notifications-go)
+# Pusher Beams Go Server SDK [![Build Status](https://travis-ci.org/pusher/push-notifications-go.svg?branch=master)](https://travis-ci.org/pusher/push-notifications-go)
 
 ## Getting Started
 
@@ -14,12 +14,12 @@ Refer to the `example` directory.
 
 - Found a bug? Please open an [issue](https://github.com/pusher/push-notifications-go/issues).
 - Have a feature request. Please open an [issue](https://github.com/pusher/push-notifications-go/issues).
-- If you want to contribute, please submit a [pull request](https://github.com/pusher/push-notifications-go/pulls) (preferrably with some tests).
+- If you want to contribute, please submit a [pull request](https://github.com/pusher/push-notifications-go/pulls) (preferably with some tests).
 
 ## Credits
 
-PushNotifications is owned and maintained by [Pusher](https://pusher.com).
+Beams is owned and maintained by [Pusher](https://pusher.com).
 
 ## License
 
-PushNotifications is released under the MIT license. See [LICENSE](https://github.com/pusher/push-notifications-go/blob/master/LICENSE) for details.
+This project is released under the MIT license. See [LICENSE](https://github.com/pusher/push-notifications-go/blob/master/LICENSE) for details.
