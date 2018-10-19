@@ -48,7 +48,7 @@ func TestPushNotifications(t *testing.T) {
 		So(noErrors, ShouldBeNil)
 		So(pn, ShouldNotBeNil)
 
-		Convey("when publishing interests", func() {
+		Convey("when publishing to interests", func() {
 			Convey("should fail if no interests are given", func() {
 				pubId, err := pn.PublishToInterests([]string{}, testPublishRequest)
 				So(pubId, ShouldEqual, "")
