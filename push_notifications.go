@@ -21,7 +21,7 @@ type PushNotifications interface {
 	PublishToInterests(interests []string, request map[string]interface{}) (publishId string, err error)
 	// An alias for `PublishToInterests`
 	Publish(interests []string, request map[string]interface{}) (publishId string, err error)
-	// Publishes notifications to all devices subscribed to at least 1 of the user ids given
+	// Publishes notifications to all devices associated with the given user ids
 	// Returns a non-empty `publishId` JSON string successful, or a non-nil `error` otherwise.
 	PublishToUsers(users []string, request map[string]interface{}) (publishId string, err error)
 	// Creates a signed JWT for a user id.
