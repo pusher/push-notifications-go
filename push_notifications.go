@@ -138,12 +138,9 @@ func (pn *pushNotifications) PublishToInterests(interests []string, request map[
 					interest)
 		}
 	}
-	newRequest := make(map[string]interface{})
-	for key, value := range request {
-		newRequest[key] = value
-	}
-	newRequest["interests"] = interests
-	bodyRequestBytes, err := json.Marshal(newRequest)
+
+	request["interests"] = interests
+	bodyRequestBytes, err := json.Marshal(request)
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to marshal the publish request JSON body")
 	}
@@ -175,12 +172,9 @@ func (pn *pushNotifications) PublishToUsers(users []string, request map[string]i
 			return "", errors.New(fmt.Sprintf("User Id at index %d is not valid utf8", i))
 		}
 	}
-	newRequest := make(map[string]interface{})
-	for key, value := range request {
-		newRequest[key] = value
-	}
-	newRequest["users"] = users
-	bodyRequestBytes, err := json.Marshal(newRequest)
+
+	request["users"] = users
+	bodyRequestBytes, err := json.Marshal(request)
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to marshal the publish request JSON body")
 	}
