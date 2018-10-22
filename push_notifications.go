@@ -138,7 +138,7 @@ func (pn *pushNotifications) PublishToInterests(interests []string, request map[
 					interest)
 		}
 	}
-
+	// TODO: don't mutate `request`
 	request["interests"] = interests
 	bodyRequestBytes, err := json.Marshal(request)
 	if err != nil {
@@ -172,7 +172,7 @@ func (pn *pushNotifications) PublishToUsers(users []string, request map[string]i
 			return "", errors.New(fmt.Sprintf("User Id at index %d is not valid utf8", i))
 		}
 	}
-
+	// TODO: don't mutate `request`
 	request["users"] = users
 	bodyRequestBytes, err := json.Marshal(request)
 	if err != nil {
