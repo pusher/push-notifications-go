@@ -104,6 +104,7 @@ func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
 	return tokenString, nil
 }
 
+// Deprecated: Use PublishToInterests instead
 func (pn *pushNotifications) Publish(interests []string, request map[string]interface{}) (string, error) {
 	return pn.PublishToInterests(interests, request)
 }
