@@ -34,7 +34,7 @@ const (
 	defaultBaseEndpointFormat   = "https://%s.pushnotifications.pusher.com"
 	maxUserIdLength             = 164
 	maxNumUserIdsWhenPublishing = 1000
-	tokenTTL                    = 24
+	tokenTTL                    = 24 * time.Hour
 )
 
 var (
@@ -92,7 +92,7 @@ func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userId,
-		"exp": time.Now().Add(tokenTTL * time.Hour).Unix(),
+		"exp": time.Now().Add(tokenTTL).Unix(),
 		"iss": "https://" + pn.InstanceId + ".pushnotifications.pusher.com",
 	})
 
