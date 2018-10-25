@@ -12,6 +12,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
+	"github.com/pusher/push-notifications-go/pushnotificationsoption"
 )
 
 // The Pusher Push Notifications Server API client
@@ -51,7 +52,7 @@ type pushNotifications struct {
 
 // Creates a New `PushNotifications` instance.
 // Returns an non-nil error if `instanceId` or `secretKey` are empty
-func New(instanceId string, secretKey string) (PushNotifications, error) {
+func New(instanceId string, secretKey string, options ...pushnotificationsoption.Option) (PushNotifications, error) {
 	if instanceId == "" {
 		return nil, errors.New("Instance Id cannot be an empty string")
 	}
@@ -59,7 +60,7 @@ func New(instanceId string, secretKey string) (PushNotifications, error) {
 		return nil, errors.New("Secret Key cannot be an empty string")
 	}
 
-	return &pushNotifications{
+	pn := &pushNotifications{
 		InstanceId: instanceId,
 		SecretKey:  secretKey,
 
@@ -67,7 +68,22 @@ func New(instanceId string, secretKey string) (PushNotifications, error) {
 		httpClient: &http.Client{
 			Timeout: defaultRequestTimeout,
 		},
-	}, nil
+	}
+
+	opts := &pushnotificationsoption.Options{}
+	for _, optApply := range options {
+		optApply(opts)
+	}
+
+	if opts.BaseURLFormat != nil {
+		pn.baseEndpoint = *opts.BaseURLFormat
+	}
+
+	if opts.RequestTimeout != nil {
+		pn.httpClient.Timeout = *opts.RequestTimeout
+	}
+
+	return pn, nil
 }
 
 type publishResponse struct {
