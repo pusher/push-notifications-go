@@ -2,8 +2,6 @@ package pushnotifications_test
 
 import (
 	"fmt"
-	"github.com/pusher/push-notifications-go"
-	"github.com/pusher/push-notifications-go/pushnotificationsoption"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pusher/push-notifications-go"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -111,7 +110,7 @@ func TestPushNotifications(t *testing.T) {
 				pn, noErrors := pushnotifications.New(
 					testInstanceId,
 					testSecretKey,
-					pushnotificationsoption.WithCustomBaseURL(testServer.URL),
+					pushnotifications.WithCustomBaseURL(testServer.URL),
 				)
 				So(noErrors, ShouldBeNil)
 
@@ -143,7 +142,7 @@ func TestPushNotifications(t *testing.T) {
 					pn, noErrors := pushnotifications.New(
 						testInstanceId,
 						testSecretKey,
-						pushnotificationsoption.WithRequestTimeout(time.Nanosecond),
+						pushnotifications.WithRequestTimeout(time.Nanosecond),
 					)
 					So(noErrors, ShouldBeNil)
 
