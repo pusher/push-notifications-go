@@ -38,7 +38,7 @@ type pushNotifications struct {
 
 // Creates a New `PushNotifications` instance.
 // Returns an non-nil error if `instanceId` or `secretKey` are empty
-func New(instanceId string, secretKey string) (PushNotifications, error) {
+func New(instanceId string, secretKey string, options ...Option) (PushNotifications, error) {
 	if instanceId == "" {
 		return nil, errors.New("Instance Id can not be an empty string")
 	}
@@ -46,7 +46,7 @@ func New(instanceId string, secretKey string) (PushNotifications, error) {
 		return nil, errors.New("Secret Key can not be an empty string")
 	}
 
-	return &pushNotifications{
+	pn := &pushNotifications{
 		InstanceId: instanceId,
 		SecretKey:  secretKey,
 
@@ -54,7 +54,13 @@ func New(instanceId string, secretKey string) (PushNotifications, error) {
 		httpClient: &http.Client{
 			Timeout: defaultRequestTimeout,
 		},
-	}, nil
+	}
+
+	for _, option := range options {
+		option(pn)
+	}
+
+	return pn, nil
 }
 
 type publishResponse struct {

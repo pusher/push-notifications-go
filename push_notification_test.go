@@ -1,4 +1,4 @@
-package pushnotifications
+package pushnotifications_test
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pusher/push-notifications-go"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -31,20 +32,20 @@ var (
 func TestPushNotifications(t *testing.T) {
 	Convey("A Push Notifications Instance", t, func() {
 		Convey("should not be created if the Instance Id is an empty string", func() {
-			noPN, err := New("", testSecretKey)
+			noPN, err := pushnotifications.New("", testSecretKey)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "Instance Id can not be an empty string")
 			So(noPN, ShouldBeNil)
 		})
 
 		Convey("should not be created if the Secret Key is an empty string", func() {
-			noPN, err := New(testInstanceId, "")
+			noPN, err := pushnotifications.New(testInstanceId, "")
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "Secret Key can not be an empty string")
 			So(noPN, ShouldBeNil)
 		})
 
-		pn, noErrors := New(testInstanceId, testSecretKey)
+		pn, noErrors := pushnotifications.New(testInstanceId, testSecretKey)
 		So(noErrors, ShouldBeNil)
 		So(pn, ShouldNotBeNil)
 
@@ -106,7 +107,12 @@ func TestPushNotifications(t *testing.T) {
 				}))
 				defer testServer.Close()
 
-				pn.(*pushNotifications).baseEndpoint = testServer.URL
+				pn, noErrors := pushnotifications.New(
+					testInstanceId,
+					testSecretKey,
+					pushnotifications.WithCustomBaseURL(testServer.URL),
+				)
+				So(noErrors, ShouldBeNil)
 
 				Convey("should return an error if the server 400 Bad Request response and contains invalid JSON", func() {
 					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
@@ -133,10 +139,16 @@ func TestPushNotifications(t *testing.T) {
 				})
 
 				Convey("should return an network error if the request times-out", func() {
-					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
+					pn, noErrors := pushnotifications.New(
+						testInstanceId,
+						testSecretKey,
+						pushnotifications.WithRequestTimeout(time.Nanosecond),
+					)
+					So(noErrors, ShouldBeNil)
+
 					pubId, err := pn.Publish([]string{"hello"}, testPublishRequest)
 					So(pubId, ShouldEqual, "")
-					So(err.Error(), ShouldContainSubstring, "Failed")
+					So(err.Error(), ShouldContainSubstring, "Timeout")
 				})
 
 				Convey("should return an error if the server 200 OK response is invalid JSON", func() {
