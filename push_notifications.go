@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"time"
 	"unicode/utf8"
@@ -19,14 +20,21 @@ type PushNotifications interface {
 	// Publishes notifications to all devices subscribed to at least 1 of the interests given
 	// Returns a non-empty `publishId` JSON string if successful; or a non-nil `error` otherwise.
 	PublishToInterests(interests []string, request map[string]interface{}) (publishId string, err error)
+
 	// An alias for `PublishToInterests`
 	Publish(interests []string, request map[string]interface{}) (publishId string, err error)
+
 	// Publishes notifications to all devices associated with the given user ids
 	// Returns a non-empty `publishId` JSON string successful, or a non-nil `error` otherwise.
 	PublishToUsers(users []string, request map[string]interface{}) (publishId string, err error)
+
 	// Creates a signed JWT for a user id.
 	// Returns a signed JWT if successful, or a non-nil `error` otherwise.
-	AuthenticateUser(userId string) (string, error)
+	AuthenticateUser(userId string) (token string, err error)
+
+	// Contacts the Beams service to remove all the devices of the given user
+	// Return a non-nil `error` if there's a problem.
+	DeleteUser(userId string) (err error)
 }
 
 const (
@@ -80,7 +88,7 @@ type publishResponse struct {
 	PublishId string `json:"publishId"`
 }
 
-type publishErrorResponse struct {
+type errorResponse struct {
 	Error       string `json:"error"`
 	Description string `json:"description"`
 }
@@ -152,8 +160,8 @@ func (pn *pushNotifications) PublishToInterests(interests []string, request map[
 		return "", errors.Wrap(err, "Failed to marshal the publish request JSON body")
 	}
 
-	url := fmt.Sprintf(pn.baseEndpoint+"/publish_api/v1/instances/%s/publishes", pn.InstanceId)
-	return pn.publishToAPI(url, bodyRequestBytes)
+	URL := fmt.Sprintf(pn.baseEndpoint+"/publish_api/v1/instances/%s/publishes", pn.InstanceId)
+	return pn.publishToAPI(URL, bodyRequestBytes)
 }
 
 func (pn *pushNotifications) PublishToUsers(users []string, request map[string]interface{}) (string, error) {
@@ -186,8 +194,8 @@ func (pn *pushNotifications) PublishToUsers(users []string, request map[string]i
 		return "", errors.Wrap(err, "Failed to marshal the publish request JSON body")
 	}
 
-	url := fmt.Sprintf("%s/publish_api/v1/instances/%s/publishes/users", pn.baseEndpoint, pn.InstanceId)
-	return pn.publishToAPI(url, bodyRequestBytes)
+	URL := fmt.Sprintf("%s/publish_api/v1/instances/%s/publishes/users", pn.baseEndpoint, pn.InstanceId)
+	return pn.publishToAPI(URL, bodyRequestBytes)
 }
 
 func (pn *pushNotifications) publishToAPI(url string, bodyRequestBytes []byte) (string, error) {
@@ -221,7 +229,7 @@ func (pn *pushNotifications) publishToAPI(url string, bodyRequestBytes []byte) (
 
 		return pubResponse.PublishId, nil
 	default:
-		pubErrorResponse := &publishErrorResponse{}
+		pubErrorResponse := &errorResponse{}
 		err = json.Unmarshal(responseBytes, pubErrorResponse)
 		if err != nil {
 			return "", errors.Wrap(err, "Failed to read publish notification response due to invalid JSON")
@@ -230,4 +238,55 @@ func (pn *pushNotifications) publishToAPI(url string, bodyRequestBytes []byte) (
 		errorMessage := fmt.Sprintf("%s: %s", pubErrorResponse.Error, pubErrorResponse.Description)
 		return "", errors.Wrap(errors.New(errorMessage), "Failed to publish notification")
 	}
+}
+
+func (pn *pushNotifications) DeleteUser(userId string) error {
+	if len(userId) == 0 {
+		return errors.New("User Id cannot be empty")
+	}
+
+	if len(userId) > maxUserIdLength {
+		return errors.Errorf(
+			"User Id ('%s') length too long (expected fewer than %d characters, got %d)",
+			userId, maxUserIdLength+1, len(userId))
+	}
+
+	urlValues := url.Values{}
+	urlValues.Add("user_id", userId)
+	URL := fmt.Sprintf("%s/user_api/v1/instances/%s/user?userId=%s", pn.baseEndpoint, pn.InstanceId, urlValues.Encode())
+	httpReq, err := http.NewRequest(http.MethodDelete, URL, nil)
+	if err != nil {
+		return errors.Wrap(err, "Failed to prepare the delete user request")
+	}
+
+	httpReq.Header.Add("Authorization", "Bearer "+pn.SecretKey)
+	httpReq.Header.Add("Content-Type", "application/json")
+	httpReq.Header.Add("X-Pusher-Library", "pusher-push-notifications-go "+sdkVersion)
+
+	httpResp, err := pn.httpClient.Do(httpReq)
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete user due to a network error")
+	}
+
+	defer httpResp.Body.Close()
+	responseBytes, err := ioutil.ReadAll(httpResp.Body)
+	if err != nil {
+		return errors.Wrap(err, "Failed to read delete user response due to a network error")
+	}
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		return nil
+	default:
+		errResponse := &errorResponse{}
+		err = json.Unmarshal(responseBytes, errResponse)
+		if err != nil {
+			return errors.Wrap(err, "Failed to read delete user response due to invalid JSON")
+		}
+
+		errorMessage := fmt.Sprintf("%s: %s", errResponse.Error, errResponse.Description)
+		return errors.Wrap(errors.New(errorMessage), "Failed to delete user")
+	}
+
+	return nil
 }

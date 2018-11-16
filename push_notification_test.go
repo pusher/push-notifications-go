@@ -385,5 +385,29 @@ func TestPushNotifications(t *testing.T) {
 				})
 			})
 		})
+
+		Convey("when deleting a User", func() {
+			Convey("should fail if no Users are given", func() {
+				err := pn.DeleteUser("")
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "User Id cannot be empty")
+			})
+
+			Convey("should return an error if the User Id is too long", func() {
+				s := ""
+				for i := 0; i < maxUserIdLength; i++ {
+					s += "a"
+				}
+
+				err := pn.DeleteUser(s + "a")
+
+				So(err, ShouldNotBeNil)
+				So(
+					err.Error(),
+					ShouldContainSubstring,
+					fmt.Sprintf("User Id ('%s') length too long (expected fewer than %d characters, got %d)", s + "a", maxUserIdLength+1, len(s) + 1),
+				)
+			})
+		})
 	})
 }
