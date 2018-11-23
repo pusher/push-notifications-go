@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"time"
 	"unicode/utf8"
@@ -254,7 +255,7 @@ func (pn *pushNotifications) DeleteUser(userId string) error {
 		return errors.New("User Id must be encoded using utf8")
 	}
 
-	URL := fmt.Sprintf("%s/user_api/v1/instances/%s/users/%s", pn.baseEndpoint, pn.InstanceId, userId)
+	URL := fmt.Sprintf("%s/user_api/v1/instances/%s/users/%s", pn.baseEndpoint, pn.InstanceId, url.PathEscape(userId))
 	httpReq, err := http.NewRequest(http.MethodDelete, URL, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to prepare the delete user request")
