@@ -251,9 +251,11 @@ func (pn *pushNotifications) DeleteUser(userId string) error {
 			userId, maxUserIdLength+1, len(userId))
 	}
 
-	urlValues := url.Values{}
-	urlValues.Add("user_id", userId)
-	URL := fmt.Sprintf("%s/user_api/v1/instances/%s/user?userId=%s", pn.baseEndpoint, pn.InstanceId, urlValues.Encode())
+	if !utf8.ValidString(userId) {
+		return errors.New("User Id must be encoded using utf8")
+	}
+
+	URL := fmt.Sprintf("%s/user_api/v1/instances/%s/users/%s", pn.baseEndpoint, pn.InstanceId, url.PathEscape(userId))
 	httpReq, err := http.NewRequest(http.MethodDelete, URL, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to prepare the delete user request")

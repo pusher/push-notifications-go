@@ -387,7 +387,7 @@ func TestPushNotifications(t *testing.T) {
 		})
 
 		Convey("when deleting a User", func() {
-			Convey("should fail if no Users are given", func() {
+			Convey("should fail if no User is given", func() {
 				err := pn.DeleteUser("")
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "User Id cannot be empty")
@@ -405,8 +405,75 @@ func TestPushNotifications(t *testing.T) {
 				So(
 					err.Error(),
 					ShouldContainSubstring,
-					fmt.Sprintf("User Id ('%s') length too long (expected fewer than %d characters, got %d)", s + "a", maxUserIdLength+1, len(s) + 1),
+					fmt.Sprintf("User Id ('%s') length too long (expected fewer than %d characters, got %d)", s+"a", maxUserIdLength+1, len(s)+1),
 				)
+			})
+
+			Convey("should fail if a User id contains invalid chars", func() {
+				invalid := []byte{192}
+				err := pn.DeleteUser(string(invalid))
+				So(err, ShouldNotBeNil)
+				So(
+					err.Error(),
+					ShouldContainSubstring,
+					"User Id must be encoded using utf8",
+				)
+			})
+
+			Convey("given a server, it", func() {
+				var lastHttpPayload []byte
+				var serverRequestHandler http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {} // no-op
+
+				successHttpHandler := func(w http.ResponseWriter, r *http.Request) {
+					lastHttpPayload, _ = ioutil.ReadAll(r.Body)
+					serverRequestHandler(w, r)
+				}
+				testServer := httptest.NewServer(http.HandlerFunc(successHttpHandler))
+				defer testServer.Close()
+
+				pn.(*pushNotifications).baseEndpoint = testServer.URL
+
+				Convey("should return an error if the server returns a 400 Bad Request response and contains invalid JSON", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{bad-json"}`))
+					}
+
+					err := pn.DeleteUser("user-id-1")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "invalid JSON")
+				})
+
+				Convey("should return an error if the server responds with 400 Bad Request", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write([]byte(`{"error": "123", "description": "a lovely description"}`))
+					}
+					err := pn.DeleteUser("user-id-1")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "Failed to delete user")
+					So(err.Error(), ShouldContainSubstring, "123")
+					So(err.Error(), ShouldContainSubstring, "a lovely description")
+				})
+
+				Convey("should return a network error if the request times out", func() {
+					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
+					err := pn.DeleteUser("user-id-1")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "Failed to delete user due to a network error")
+				})
+
+				Convey("should succeed if the request is valid", func() {
+					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+
+						expectedHttpPayload := ""
+
+						err := pn.DeleteUser("user-id-1")
+						So(err, ShouldBeNil)
+						So(string(lastHttpPayload), ShouldResemble, expectedHttpPayload)
+					}
+				})
 			})
 		})
 	})
