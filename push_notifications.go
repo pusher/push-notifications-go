@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +30,7 @@ type PushNotifications interface {
 
 	// Creates a signed JWT for a user id.
 	// Returns a signed JWT if successful, or a non-nil `error` otherwise.
-	AuthenticateUser(userId string) (token string, err error)
+	GenerateToken(userId string) (token string, err error)
 
 	// Contacts the Beams service to remove all the devices of the given user
 	// Return a non-nil `error` if there's a problem.
@@ -93,7 +93,7 @@ type errorResponse struct {
 	Description string `json:"description"`
 }
 
-func (pn *pushNotifications) AuthenticateUser(userId string) (string, error) {
+func (pn *pushNotifications) GenerateToken(userId string) (string, error) {
 	if len(userId) == 0 {
 		return "", errors.New("User Id cannot be empty")
 	}

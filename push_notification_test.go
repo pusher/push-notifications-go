@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -179,9 +179,9 @@ func TestPushNotifications(t *testing.T) {
 			}
 		})
 
-		Convey("when authenticating a User", func() {
+		Convey("when generating a token", func() {
 			Convey("should return an error if the User Id is empty", func() {
-				token, err := pn.AuthenticateUser("")
+				token, err := pn.GenerateToken("")
 
 				So(err, ShouldNotBeNil)
 				So(token, ShouldEqual, "")
@@ -194,13 +194,13 @@ func TestPushNotifications(t *testing.T) {
 					s += "a"
 				}
 
-				token, err := pn.AuthenticateUser(s)
+				token, err := pn.GenerateToken(s)
 
 				So(err, ShouldBeNil)
 				So(token, ShouldNotEqual, "")
 
 				longerUserId := s + "a"
-				token, err = pn.AuthenticateUser(s + "a")
+				token, err = pn.GenerateToken(s + "a")
 
 				So(err, ShouldNotBeNil)
 				So(token, ShouldEqual, "")
@@ -212,7 +212,7 @@ func TestPushNotifications(t *testing.T) {
 			})
 
 			Convey("should return a valid JWT token if everything is correct", func() {
-				token, err := pn.AuthenticateUser("u-123")
+				token, err := pn.GenerateToken("u-123")
 				So(err, ShouldBeNil)
 				So(token, ShouldNotEqual, "")
 
