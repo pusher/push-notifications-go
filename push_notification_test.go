@@ -179,7 +179,7 @@ func TestPushNotifications(t *testing.T) {
 			}
 		})
 
-		Convey("when authenticating a User", func() {
+		Convey("when generating a token", func() {
 			Convey("should return an error if the User Id is empty", func() {
 				token, err := pn.GenerateToken("")
 
