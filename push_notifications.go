@@ -30,7 +30,7 @@ type PushNotifications interface {
 
 	// Creates a signed JWT for a user id.
 	// Returns a signed JWT if successful, or a non-nil `error` otherwise.
-	GenerateToken(userId string) (token string, err error)
+	GenerateToken(userId string) (token map[string]interface{}, err error)
 
 	// Contacts the Beams service to remove all the devices of the given user
 	// Return a non-nil `error` if there's a problem.
@@ -93,13 +93,15 @@ type errorResponse struct {
 	Description string `json:"description"`
 }
 
-func (pn *pushNotifications) GenerateToken(userId string) (string, error) {
+func (pn *pushNotifications) GenerateToken(userId string) (map[string]interface{}, error) {
+	emptyMap := map[string]interface{}{}
+
 	if len(userId) == 0 {
-		return "", errors.New("User Id cannot be empty")
+		return emptyMap, errors.New("User Id cannot be empty")
 	}
 
 	if len(userId) > maxUserIdLength {
-		return "", errors.Errorf(
+		return emptyMap, errors.Errorf(
 			"User Id ('%s') length too long (expected fewer than %d characters, got %d)",
 			userId, maxUserIdLength+1, len(userId))
 	}
@@ -112,10 +114,14 @@ func (pn *pushNotifications) GenerateToken(userId string) (string, error) {
 
 	tokenString, signingErrorErr := token.SignedString([]byte(pn.SecretKey))
 	if signingErrorErr != nil {
-		return "", errors.Wrap(signingErrorErr, "Failed to sign the JWT token used for User Authentication")
+		return emptyMap, errors.Wrap(signingErrorErr, "Failed to sign the JWT token used for User Authentication")
 	}
 
-	return tokenString, nil
+	tokenMap := map[string]interface{}{
+		"token": tokenString,
+	}
+
+	return tokenMap, nil
 }
 
 // Deprecated: Use PublishToInterests instead
