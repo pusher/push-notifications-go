@@ -142,14 +142,6 @@ func TestPushNotifications(t *testing.T) {
 							So(err.Error(), ShouldContainSubstring, "why")
 						})
 
-						Convey("should return a network error if the request times out", func() {
-							pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
-							pubId, err := publishToInterests([]string{"hello"}, testPublishRequest)
-							So(pubId, ShouldEqual, "")
-							So(err, ShouldNotBeNil)
-							So(err.Error(), ShouldContainSubstring, "Failed")
-						})
-
 						Convey("should return an error if the server 200 OK response is invalid JSON", func() {
 							serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
 								w.WriteHeader(http.StatusOK)
@@ -174,6 +166,25 @@ func TestPushNotifications(t *testing.T) {
 							expected := `{"fcm":{"notification":{"body":"Hello, world","title":"Hello"}},"interests":["hell-o"]}`
 							So(string(lastHttpPayload), ShouldResemble, expected)
 						})
+					})
+
+					Convey("given a slow server, it", func() {
+						slowHttpHandler := func(w http.ResponseWriter, r *http.Request) {
+							time.Sleep(200 * time.Millisecond)
+						}
+						testServer := httptest.NewServer(http.HandlerFunc(slowHttpHandler))
+						defer testServer.Close()
+
+						pn.(*pushNotifications).baseEndpoint = testServer.URL
+
+						Convey("should return a network error if the request times out", func() {
+							pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
+							pubId, err := publishToInterests([]string{"hello"}, testPublishRequest)
+							So(pubId, ShouldEqual, "")
+							So(err, ShouldNotBeNil)
+							So(err.Error(), ShouldContainSubstring, "Failed")
+						})
+
 					})
 				})
 			}
@@ -323,14 +334,6 @@ func TestPushNotifications(t *testing.T) {
 					So(err.Error(), ShouldContainSubstring, "a lovely description")
 				})
 
-				Convey("should return a network error if the request times out", func() {
-					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
-					pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
-					So(pubId, ShouldEqual, "")
-					So(err, ShouldNotBeNil)
-					So(err.Error(), ShouldContainSubstring, "Failed to publish notifications due to a network error")
-				})
-
 				Convey("should return an error if the server responds 200 OK but returns invalid JSON", func() {
 					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusOK)
@@ -382,6 +385,24 @@ func TestPushNotifications(t *testing.T) {
 
 					So(pubId, ShouldNotBeNil)
 					So(err, ShouldBeNil)
+				})
+			})
+
+			Convey("given a slow server, it", func() {
+				slowHttpHandler := func(w http.ResponseWriter, r *http.Request) {
+					time.Sleep(200 * time.Millisecond)
+				}
+				testServer := httptest.NewServer(http.HandlerFunc(slowHttpHandler))
+				defer testServer.Close()
+
+				pn.(*pushNotifications).baseEndpoint = testServer.URL
+
+				Convey("should return a network error if the request times out", func() {
+					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
+					pubId, err := pn.PublishToUsers([]string{"user-id-1"}, testPublishRequest)
+					So(pubId, ShouldEqual, "")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "Failed to publish notifications due to a network error")
 				})
 			})
 		})
@@ -456,13 +477,6 @@ func TestPushNotifications(t *testing.T) {
 					So(err.Error(), ShouldContainSubstring, "a lovely description")
 				})
 
-				Convey("should return a network error if the request times out", func() {
-					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
-					err := pn.DeleteUser("user-id-1")
-					So(err, ShouldNotBeNil)
-					So(err.Error(), ShouldContainSubstring, "Failed to delete user due to a network error")
-				})
-
 				Convey("should succeed if the request is valid", func() {
 					serverRequestHandler = func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusOK)
@@ -473,6 +487,23 @@ func TestPushNotifications(t *testing.T) {
 						So(err, ShouldBeNil)
 						So(string(lastHttpPayload), ShouldResemble, expectedHttpPayload)
 					}
+				})
+			})
+
+			Convey("given a slow server, it", func() {
+				slowHttpHandler := func(w http.ResponseWriter, r *http.Request) {
+					time.Sleep(200 * time.Millisecond)
+				}
+				testServer := httptest.NewServer(http.HandlerFunc(slowHttpHandler))
+				defer testServer.Close()
+
+				pn.(*pushNotifications).baseEndpoint = testServer.URL
+
+				Convey("should return a network error if the request times out", func() {
+					pn.(*pushNotifications).httpClient.Timeout = time.Nanosecond
+					err := pn.DeleteUser("user-id-1")
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "Failed to delete user due to a network error")
 				})
 			})
 		})
