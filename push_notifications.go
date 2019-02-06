@@ -21,7 +21,7 @@ type PushNotifications interface {
 	// Returns a non-empty `publishId` JSON string if successful; or a non-nil `error` otherwise.
 	PublishToInterests(interests []string, request map[string]interface{}) (publishId string, err error)
 
-	// An alias for `PublishToInterests`
+	// DEPRECATED. An alias for `PublishToInterests`
 	Publish(interests []string, request map[string]interface{}) (publishId string, err error)
 
 	// Publishes notifications to all devices associated with the given user ids
