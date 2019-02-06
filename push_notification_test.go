@@ -195,7 +195,7 @@ func TestPushNotifications(t *testing.T) {
 				token, err := pn.GenerateToken("")
 
 				So(err, ShouldNotBeNil)
-				So(token, ShouldEqual, "")
+				So(token, ShouldBeNil)
 				So(err.Error(), ShouldContainSubstring, "User Id cannot be empty")
 			})
 
@@ -208,13 +208,13 @@ func TestPushNotifications(t *testing.T) {
 				token, err := pn.GenerateToken(s)
 
 				So(err, ShouldBeNil)
-				So(token, ShouldNotEqual, "")
+				So(token, ShouldNotBeNil)
 
 				longerUserId := s + "a"
 				token, err = pn.GenerateToken(s + "a")
 
 				So(err, ShouldNotBeNil)
-				So(token, ShouldEqual, "")
+				So(token, ShouldBeNil)
 				So(
 					err.Error(),
 					ShouldContainSubstring,
@@ -223,7 +223,9 @@ func TestPushNotifications(t *testing.T) {
 			})
 
 			Convey("should return a valid JWT token if everything is correct", func() {
-				token, err := pn.GenerateToken("u-123")
+				tokenMap, err := pn.GenerateToken("u-123")
+
+				token := tokenMap["token"].(string)
 				So(err, ShouldBeNil)
 				So(token, ShouldNotEqual, "")
 
