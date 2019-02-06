@@ -12,7 +12,7 @@ const (
 	secretKey  = "3B397552E080252048FE03009C1253A"
 )
 
-func main() {
+func main2() {
 	beamsClient, _ := pushnotifications.New(instanceId, secretKey)
 
 	http.HandleFunc("/pusher/beams-auth", func (w http.ResponseWriter, r *http.Request) {
