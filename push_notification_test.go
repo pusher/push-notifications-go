@@ -195,7 +195,7 @@ func TestPushNotifications(t *testing.T) {
 				token, err := pn.GenerateToken("")
 
 				So(err, ShouldNotBeNil)
-				So(token, ShouldBeEmpty)
+				So(token, ShouldBeNil)
 				So(err.Error(), ShouldContainSubstring, "User Id cannot be empty")
 			})
 
@@ -208,13 +208,13 @@ func TestPushNotifications(t *testing.T) {
 				token, err := pn.GenerateToken(s)
 
 				So(err, ShouldBeNil)
-				So(token, ShouldNotBeEmpty)
+				So(token, ShouldNotBeNil)
 
 				longerUserId := s + "a"
 				token, err = pn.GenerateToken(s + "a")
 
 				So(err, ShouldNotBeNil)
-				So(token, ShouldBeEmpty)
+				So(token, ShouldBeNil)
 				So(
 					err.Error(),
 					ShouldContainSubstring,

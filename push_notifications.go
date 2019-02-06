@@ -94,14 +94,12 @@ type errorResponse struct {
 }
 
 func (pn *pushNotifications) GenerateToken(userId string) (map[string]interface{}, error) {
-	emptyMap := map[string]interface{}{}
-
 	if len(userId) == 0 {
-		return emptyMap, errors.New("User Id cannot be empty")
+		return nil, errors.New("User Id cannot be empty")
 	}
 
 	if len(userId) > maxUserIdLength {
-		return emptyMap, errors.Errorf(
+		return nil, errors.Errorf(
 			"User Id ('%s') length too long (expected fewer than %d characters, got %d)",
 			userId, maxUserIdLength+1, len(userId))
 	}
@@ -114,7 +112,7 @@ func (pn *pushNotifications) GenerateToken(userId string) (map[string]interface{
 
 	tokenString, signingErrorErr := token.SignedString([]byte(pn.SecretKey))
 	if signingErrorErr != nil {
-		return emptyMap, errors.Wrap(signingErrorErr, "Failed to sign the JWT token used for User Authentication")
+		return nil, errors.Wrap(signingErrorErr, "Failed to sign the JWT token used for User Authentication")
 	}
 
 	tokenMap := map[string]interface{}{
