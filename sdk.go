@@ -1,3 +1,3 @@
 package pushnotifications
 
-const sdkVersion = "0.8.2"
+const sdkVersion = "1.1.0"
