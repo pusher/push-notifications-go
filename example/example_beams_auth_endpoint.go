@@ -15,7 +15,7 @@ const (
 func main2() {
 	beamsClient, _ := pushnotifications.New(instanceId, secretKey)
 
-	http.HandleFunc("/pusher/beams-auth", func (w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/pusher/beams-auth", func(w http.ResponseWriter, r *http.Request) {
 		// Do your normal auth checks here 🔒
 		userID := "" // get it from your auth system
 		userIDinQueryParam := r.URL.Query().Get("user_id")
